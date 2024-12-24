@@ -1,0 +1,10 @@
+{
+    "connectorKeys":{
+      "description":"One file per model",
+      "location":"gs://bank_a/outputs/{model}.json",
+      "file_format":"json",
+      "encryption_key":"${ENCRYPTION_KEY_6766dea490a70cd785ace46e}",
+      "key_id":"${KEY_ID_6766dea490a70cd785ace46e}",
+      "secret":"${SECRET_6766dea490a70cd785ace46e}"
+    }
+  }

@@ -1,0 +1,7 @@
+#take dv-utils either from github or from pypi
+#git+https://github.com/datavillage-me/dv-utils@main#egg=dv-utils
+dv-utils>=1.2.1
+pandas
+openpyxl
+pycryptodome
+duckdb==1.1.2

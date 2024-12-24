@@ -1,0 +1,42 @@
+{
+            "report_date": "2024-11-27 20:09:28",
+            "accounts": [ 
+        {
+                "account_id": "DK311448088022695900",
+                "account_holder_names": [
+                    "Zora Kokalj"
+                ],
+                "combined_risk_score": "32",
+                "number_of_scoring_parties":"1",
+                "red_flags": [
+                    {"flagged_date": "2020-12-31", "reason": "Frequent changes in account holder details"},{"flagged_date": "2023-03-16", "reason": "Round-number transactions"}
+                ]
+            }
+        ,
+        {
+                "account_id": "RO79OSQB3432547082039702",
+                "account_holder_names": [
+                    "Tiina Randmaa"
+                ],
+                "combined_risk_score": "31",
+                "number_of_scoring_parties":"1",
+                "red_flags": [
+                    {"flagged_date": "2022-11-07", "reason": "Dormant accounts suddenly becoming active"},{"flagged_date": "2022-01-05", "reason": "Unusually high-risk scores from internal risk models"},{"flagged_date": "2023-10-16", "reason": "Incomplete KYC (Know Your Customer) details"}
+                ]
+            }
+        ,
+        {
+                "account_id": "GB82EVJA51473322705367",
+                "account_holder_names": [
+                    "Miroslaw Jockel-Bähr","Matija Kovačić","Margareta Hansson"
+                ],
+                "combined_risk_score": "48",
+                "number_of_scoring_parties":"3",
+                "red_flags": [
+                    {"flagged_date": "2023-02-12", "reason": "Linked to known criminal activities or entities"},{"flagged_date": "2024-01-12", "reason": "Transactions to or from known suspicious entities"},{"flagged_date": "2023-07-09", "reason": "Frequent changes in account holder details"},{"flagged_date": "2020-02-20", "reason": "Transactions to or from known suspicious entities"},{"flagged_date": "2023-09-10", "reason": "High-risk IP addresses or geolocations"}
+                ]
+            }
+        
+            ]
+            }
+            
