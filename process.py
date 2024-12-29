@@ -83,11 +83,13 @@ def check_data_quality_contracts_event_processor(evt: dict):
                     check_results=test_results[test_result_descriptor_id]
                     for check_result in check_results:
                         description=check_result
+                        timestamp=now = datetime.now()
+                        formated_now = now.strftime('%Y-%m-%dT%H:%M:%SZ')
                         check_result_json=test_results[test_result_descriptor_id][check_result]
                         hasErrors=check_result_json["hasErrors"]
                         hasWarnings=check_result_json["hasWarnings"]
                         hasFailures=check_result_json["hasFailures"]
-                        query="INSERT INTO "+model_key+" VALUES ('"+description+"',"+str(hasErrors)+","+str(hasWarnings)+","+str(hasFailures)+",'"+str(json.dumps(check_result_json).replace("'","''"))+"')"
+                        query="INSERT INTO "+model_key+" VALUES ('"+description+"','"+formated_now+"',"+str(hasErrors)+","+str(hasWarnings)+","+str(hasFailures)+",'"+str(json.dumps(check_result_json).replace("'","''"))+"')"
                         con.sql(query)
                     export_sql=data_contract.connector.export_duckdb(model_key)
                     con.sql(export_sql)  
