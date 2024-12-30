@@ -64,7 +64,7 @@ def random_account_number(n):
     fake = Faker(currentLocale)
     fake.seed_instance(int(n*10))
     return fake.iban()
-
+ 
 
 def date_added(n):
     fake = Faker()
