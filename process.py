@@ -91,8 +91,8 @@ def check_data_quality_contracts_event_processor(evt: dict):
                         hasFailures=check_result_json["hasFailures"]
                         query="INSERT INTO "+model_key+" VALUES ('"+description+"','"+formated_now+"',"+str(hasErrors)+","+str(hasWarnings)+","+str(hasFailures)+",'"+str(json.dumps(check_result_json).replace("'","''"))+"')"
                         con.sql(query)
-                    export_sql=data_contract.connector.export_duckdb(model_key)
-                    con.sql(export_sql)  
+                    data_contract.connector.export_duckdb(model_key)
+                    data_contract.connector.export_signed_output_duckdb(model_key,default_settings.collaboration_space_id)
         
     except Exception as e:
         logger.error(e)
