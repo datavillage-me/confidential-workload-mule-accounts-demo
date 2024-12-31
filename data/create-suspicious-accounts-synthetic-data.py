@@ -133,3 +133,9 @@ for x in range(numberOfDatasets):
     res=duckdb.sql("COPY (SELECT * FROM './data/participant_"+str(x)+"/suspicious_accounts_clear.parquet') TO './data/participant_"+str(x)+"/suspicious_accounts.parquet' (ENCRYPTION_CONFIG {footer_key: '"+keyName+"'})")
     df = duckdb.sql("SELECT * FROM read_parquet('data/participant_"+str(x)+"/suspicious_accounts.parquet', encryption_config ={footer_key: '"+keyName+"'})").df()
     print (df)
+
+
+#export files to CSV
+for x in range(numberOfDatasets):
+    keyName="dataset"+str(x)
+    res=duckdb.sql("COPY (SELECT * FROM './data/participant_"+str(x)+"/suspicious_accounts_clear.parquet') TO './data/participant_"+str(x)+"/suspicious_accounts.csv'")
