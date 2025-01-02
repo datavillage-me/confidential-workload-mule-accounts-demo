@@ -164,13 +164,15 @@ def get_suspicous_accounts_event_processor(evt: dict):
                 (item["clientId"] for item in participants if "dataDescriptors" in item and any(dd["id"] == target_id for dd in item["dataDescriptors"])),
                 None
             )
-            con.sql(data_contract.export_contract_to_sql_create_table(export_model_key))
-            result_query=f"SELECT account_uuid,account_number,account_format,bank_id,ARRAY_AGG(DISTINCT reporter_bic) AS reporter_bic,ARRAY_AGG(DISTINCT date_added) AS date_added,count(*) as report_count FROM aggregated_suspicious_accounts GROUP BY account_uuid, account_number, account_format, bank_id"
-            query=f"INSERT INTO {export_model_key} ({result_query})"
-            con.sql(query)
-            con.sql(f"SELECT * FROM {export_model_key}")
-            data_contract.connector.export_signed_output_duckdb(export_model_key,default_settings.collaboration_space_id)
-            audit_log(f"Suspicious_accounts exported to: {data_contract.data_descriptor_id}.")
+            #export only if queried bank_id is the target_client_id
+            if bank_id==default_settings.config("CLIENT_"+target_client_id+"_BANK_ID", default="", cast=str):
+                con.sql(data_contract.export_contract_to_sql_create_table(export_model_key))
+                result_query=f"SELECT account_uuid,account_number,account_format,bank_id,ARRAY_AGG(DISTINCT reporter_bic) AS reporter_bic,ARRAY_AGG(DISTINCT date_added) AS date_added,count(*) as report_count FROM aggregated_suspicious_accounts WHERE bank_id='{bank_id} GROUP BY account_uuid, account_number, account_format, bank_id"
+                query=f"INSERT INTO {export_model_key} ({result_query})"
+                con.sql(query)
+                con.sql(f"SELECT * FROM {export_model_key}")
+                data_contract.connector.export_signed_output_duckdb(export_model_key,default_settings.collaboration_space_id)
+                audit_log(f"Suspicious_accounts exported to: {data_contract.data_descriptor_id}.")
         logger.info(f"|                                                       |")
         execution_time=(time.time() - start_time)
         logger.info(f"|    Execution time:  {execution_time} secs           |")
