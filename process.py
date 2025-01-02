@@ -42,6 +42,10 @@ def event_processor(evt: dict):
         # use the CHECK_DATA_QUALITY event processor dedicated function
         logger.info(f"Use the check data quality event processor")
         check_data_quality_contracts_event_processor(evt)
+    elif evt_type == "GET_SUSPICIOUS_ACCOUNTS":
+        # use the GET_SUSPICIOUS_ACCOUNTS event processor dedicated function
+        logger.info(f"Use the get suspicious accounts event processor")
+        get_suspicous_accounts_event_processor(evt)
     else:
         generic_event_processor(evt)
 
@@ -61,7 +65,7 @@ def check_data_quality_contracts_event_processor(evt: dict):
         #Create in memory duckdb (encrypted memory on confidential computing)
         con = duckdb.connect(database=":memory:")
         
-        #Add connector settings to duckdb con for all data contracts and export only test results linked to the right client
+        #Add connector settings to duckdb con for all data contracts and export test results linked to the right client
         #TODO need to add the client_id in a contract within a collaboration space... to be discussed with the team
         client=Client()
         participants=client.get_list_of_participants(default_settings.collaboration_space_id,None)
@@ -91,8 +95,82 @@ def check_data_quality_contracts_event_processor(evt: dict):
                         hasFailures=check_result_json["hasFailures"]
                         query="INSERT INTO "+model_key+" VALUES ('"+description+"','"+formated_now+"',"+str(hasErrors)+","+str(hasWarnings)+","+str(hasFailures)+",'"+str(json.dumps(check_result_json).replace("'","''"))+"')"
                         con.sql(query)
-                    data_contract.connector.export_duckdb(model_key)
                     data_contract.connector.export_signed_output_duckdb(model_key,default_settings.collaboration_space_id)
+    except Exception as e:
+        logger.error(e)
+
+def get_suspicous_accounts_event_processor(evt: dict):
+    try:
+        model_key="suspicious_accounts"
+        logger.info(f"---------------------------------------------------------")
+        logger.info(f"|                    START PROCESSING                   |")
+        logger.info(f"|                                                       |")
+        start_time = time.time()
+        logger.info(f"|    Start time:  {start_time} secs               |")
+        logger.info(f"|                                                       |")
+        audit_log(f"Start processing event: {evt.get('type', '')}.")
+
+        #load parameters
+        bank_id= evt.get("bank_id", "")
+        allowed_bank_ids=default_settings.config("ALLOWED_BANK_IDS", default="", cast=str)
+        allowed_bank_ids_list=None
+        if allowed_bank_ids!=None:
+            allowed_bank_ids_list=allowed_bank_ids.split(",")
+        if bank_id==None or not(bank_id in allowed_bank_ids_list):
+            audit_log(f"Bank identifier empty or not valid.")
+            raise Exception("Bank identifier empty or not valid")
+
+        logger.info(f"| 1. Get data contracts                                 |")
+        logger.info(f"|                                                       |")
+
+        #Connect in memory duckdb (encrypted memory on confidential computing)
+        con = duckdb.connect(database=":memory:")
+
+        collaboration_space_id=default_settings.collaboration_space_id
+        contractManager=ContractManager()
+        data_contracts=contractManager.get_contracts_for_collaboration_space(collaboration_space_id)
+
+        logger.info(f"| 2. Load suspicious accounts from data sources         |")
+        logger.info(f"|                                                       |")
+        for data_contract in data_contracts:
+            # Add DuckDB connection for the current data contract
+            con = data_contract.connector.add_duck_db_connection(con)
+            
+            # Construct the query for the current data contract
+            query = f"SELECT * FROM {data_contract.connector.get_duckdb_source(model_key)} WHERE bank_id='{bank_id}'"
+            
+            # Execute query and append or create table
+            tables_list=[item[0] for item in con.execute("SHOW TABLES").fetchall()]
+            if 'aggregated_suspicious_accounts' not in tables_list:
+                con.execute(f"CREATE TABLE aggregated_suspicious_accounts AS {query}")
+                audit_log(f"Read suspicious_accounts from: {data_contract.data_descriptor_id}.")
+            else:
+                con.execute(f"INSERT INTO aggregated_suspicious_accounts {query}")
+                audit_log(f"Read suspicious_accounts from: {data_contract.data_descriptor_id}.")
         
+        logger.info(f"| 3. Export suspicious accounts                         |")
+        logger.info(f"|                                                       |")
+        #get data contracts from all data consumers
+        data_contracts=contractManager.get_contracts_for_collaboration_space(default_settings.collaboration_space_id,Client.DATA_CONSUMER_COLLABORATOR_ROLE_VALUE)
+        #Add connector settings to duckdb con for all data contracts and export test results linked to the right client
+        #TODO need to add the client_id in a contract within a collaboration space... to be discussed with the team
+        client=Client()
+        participants=client.get_list_of_participants(default_settings.collaboration_space_id,None)
+        export_model_key="suspicious_accounts"
+        for data_contract in data_contracts:
+            con = data_contract.connector.add_duck_db_connection(con)
+            target_id=data_contract.data_descriptor_id
+            target_client_id = next(
+                (item["clientId"] for item in participants if "dataDescriptors" in item and any(dd["id"] == target_id for dd in item["dataDescriptors"])),
+                None
+            )
+            print(target_id)
+            con.sql(data_contract.export_contract_to_sql_create_table(export_model_key))
+            result_query=f"SELECT account_uuid,account_number,account_format,bank_id,ARRAY_AGG(DISTINCT reporter_bic) AS reporter_bic,ARRAY_AGG(DISTINCT date_added) AS date_added,count(*) as report_count FROM aggregated_suspicious_accounts GROUP BY account_uuid, account_number, account_format, bank_id"
+            query=f"INSERT INTO {export_model_key} ({result_query})"
+            con.sql(query)
+            df=con.sql(f"SELECT * FROM {export_model_key}").df()
+            print(df)
+            data_contract.connector.export_signed_output_duckdb(export_model_key,default_settings.collaboration_space_id)
     except Exception as e:
         logger.error(e)
