@@ -101,28 +101,28 @@ numberOfDatasets=3
 account_format="IBAN"
 
 reporter_bic=["REPORTER_1","REPORTER_2","REPORTER_3"]
-for x in range(numberOfDatasets):
-    i=random.randrange(0, 3)
-    currentLocale=locales[i]
-    res = duckdb.sql("COPY (SELECT uuid(i) as account_uuid, account_number(i) as account_number, '"+account_format+"' as account_format, bank_id(i,'"+reporter_bic[x]+"') as bank_id, '"+reporter_bic[x]+"' as reporter_bic, date_added(i) as date_added,  FROM generate_series(1, "+str(numberOfRecords)+") s(i)) TO 'data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'  (FORMAT 'parquet')")
+# for x in range(numberOfDatasets):
+#     i=random.randrange(0, 3)
+#     currentLocale=locales[i]
+#     res = duckdb.sql("COPY (SELECT uuid(i) as account_uuid, account_number(i) as account_number, '"+account_format+"' as account_format, bank_id(i,'"+reporter_bic[x]+"') as bank_id, '"+reporter_bic[x]+"' as reporter_bic, date_added(i) as date_added,  FROM generate_series(1, "+str(numberOfRecords)+") s(i)) TO 'data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'  (FORMAT 'parquet')")
 
-#get bank_id with at least 3 reported account
-df = duckdb.sql("SELECT bank_id,count(*) as total FROM read_parquet(['data/participant_0/suspicious_accounts_clear.parquet','data/participant_1/suspicious_accounts_clear.parquet','data/participant_2/suspicious_accounts_clear.parquet']) GROUP BY bank_id HAVING total > 2").df()
+# #get bank_id with at least 3 reported account
+# df = duckdb.sql("SELECT bank_id,count(*) as total FROM read_parquet(['data/participant_0/suspicious_accounts_clear.parquet','data/participant_1/suspicious_accounts_clear.parquet','data/participant_2/suspicious_accounts_clear.parquet']) GROUP BY bank_id HAVING total > 2").df()
 
-bank_bic=[3,2,3]
-for x in range (numberOfDatasets):
-    bank_id=df.iloc[x]["bank_id"]
-    bank_bic[x]=bank_id
-    print(bank_bic[x])
-    query="SELECT * FROM read_parquet(['data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'])"
-    duckdb.sql("CREATE OR REPLACE TABLE suspicious_accounts AS "+query) 
-    duckdb.sql("UPDATE suspicious_accounts SET reporter_bic='"+bank_id+"' WHERE reporter_bic='"+reporter_bic[x]+"'") 
-    duckdb.sql("DELETE FROM suspicious_accounts WHERE bank_id='"+bank_id+"'")
-    duckdb.sql("COPY suspicious_accounts TO 'data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'  (FORMAT 'parquet')") 
+# bank_bic=[3,2,3]
+# for x in range (numberOfDatasets):
+#     bank_id=df.iloc[x]["bank_id"]
+#     bank_bic[x]=bank_id
+#     print(bank_bic[x])
+#     query="SELECT * FROM read_parquet(['data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'])"
+#     duckdb.sql("CREATE OR REPLACE TABLE suspicious_accounts AS "+query) 
+#     duckdb.sql("UPDATE suspicious_accounts SET reporter_bic='"+bank_id+"' WHERE reporter_bic='"+reporter_bic[x]+"'") 
+#     duckdb.sql("DELETE FROM suspicious_accounts WHERE bank_id='"+bank_id+"'")
+#     duckdb.sql("COPY suspicious_accounts TO 'data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'  (FORMAT 'parquet')") 
 
-for x in range (numberOfDatasets):
-    df = duckdb.sql("SELECT * FROM read_parquet(['data/participant_0/suspicious_accounts_clear.parquet','data/participant_1/suspicious_accounts_clear.parquet','data/participant_2/suspicious_accounts_clear.parquet'])  WHERE bank_id ='"+bank_bic[x]+"'").df()
-    print (df)
+# for x in range (numberOfDatasets):
+#     df = duckdb.sql("SELECT * FROM read_parquet(['data/participant_0/suspicious_accounts_clear.parquet','data/participant_1/suspicious_accounts_clear.parquet','data/participant_2/suspicious_accounts_clear.parquet'])  WHERE bank_id ='"+bank_bic[x]+"'").df()
+#     print (df)
 
 #generate encrypted files
 keys = ["GZs0DsMHdXr39mzkFwHwTHvCuUlID3HB","8SX9rT9VSHohHgEz2qRer5oCoid2RUAS","DrRLoOybRrUUANB9fkhHU9AZ7g4NKkMs"]
@@ -139,3 +139,22 @@ for x in range(numberOfDatasets):
 for x in range(numberOfDatasets):
     keyName="dataset"+str(x)
     res=duckdb.sql("COPY (SELECT * FROM './data/participant_"+str(x)+"/suspicious_accounts_clear.parquet') TO './data/participant_"+str(x)+"/suspicious_accounts.csv'")
+
+
+#temporary - need to move into section above 
+# bank_bic=["IZXVGB23BWP","QPSBDEB1","MRWNGBXX8ZX"]
+# for x in range (numberOfDatasets):
+#     query="SELECT * FROM read_parquet(['data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'])"
+#     duckdb.sql("CREATE OR REPLACE TABLE suspicious_accounts AS "+query) 
+#     for bic in bank_bic:
+#         if bic!= bank_bic[x]:
+#             if "GB" in bic:
+#                 locale="GB"
+#             elif "DE" in bic:
+#                 locale="DE"
+#             query=f"UPDATE suspicious_accounts SET bank_id = '{bic}' WHERE bank_id NOT IN ('IZXVGB23BWP','QPSBDEB1','MRWNGBXX8ZX') AND account_number IN (SELECT account_number FROM suspicious_accounts WHERE SUBSTR(account_number, 1, 2) = '{locale}' LIMIT 10)";
+#             duckdb.sql(query) 
+#         duckdb.sql("COPY suspicious_accounts TO 'data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'  (FORMAT 'parquet')") 
+    # query="SELECT * FROM suspicious_accounts WHERE bank_id='IZXVGB23BWP'"
+    # df=duckdb.sql(query).df()
+    # print(df)
