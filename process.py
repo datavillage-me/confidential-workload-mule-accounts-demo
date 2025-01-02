@@ -172,5 +172,10 @@ def get_suspicous_accounts_event_processor(evt: dict):
             df=con.sql(f"SELECT * FROM {export_model_key}").df()
             print(df)
             data_contract.connector.export_signed_output_duckdb(export_model_key,default_settings.collaboration_space_id)
+        logger.info(f"|                                                       |")
+        execution_time=(time.time() - start_time)
+        logger.info(f"|    Execution time:  {execution_time} secs           |")
+        logger.info(f"|                                                       |")
+        logger.info(f"--------------------------------------------------------")
     except Exception as e:
         logger.error(e)
