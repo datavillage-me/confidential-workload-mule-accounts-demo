@@ -89,8 +89,11 @@ bank_id=["IZXVGB23BWP","QPSBDEB1","MRWNGBXX8ZX"]
 for x in range(numberOfDatasets):
     currentLocale=locales[x]
     print(currentLocale)
-    res = duckdb.sql("COPY (SELECT uuid(i) as account_uuid, account_number(i) as account_number, '"+account_format+"' as account_format, '"+bank_id[x]+"' as bank_id, date_added(i) as date_added, critical_account(i) as critical_account  FROM generate_series(1, "+str(numberOfRecords)+") s(i)) TO 'data/participant_"+str(x)+"/mule_accounts_clear.parquet'  (FORMAT 'parquet')")
+    res = duckdb.sql(f"COPY (SELECT uuid(i+{x*numberOfRecords}) as account_uuid, account_number(i+{x*numberOfRecords}) as account_number, '{account_format}' as account_format, '{bank_id[x]}' as bank_id, date_added(i+{x*numberOfRecords}) as date_added, critical_account(i+{x*numberOfRecords}) as critical_account  FROM generate_series(1, {str(numberOfRecords)}) s(i)) TO 'data/participant_{str(x)}/mule_accounts_clear.parquet'  (FORMAT 'parquet')")
 
+#select common account in files and check if no common account files
+df = duckdb.sql("SELECT account_number,ARRAY_AGG(DISTINCT bank_id) AS bank_id,count(*) as total FROM read_parquet(['data/participant_0/mule_accounts_clear.parquet','data/participant_1/mule_accounts_clear.parquet','data/participant_2/mule_accounts_clear.parquet']) GROUP BY account_number HAVING total > 1").df()
+print(df)
 
 #generate encrypted files
 keys = ["GZs0DsMHdXr39mzkFwHwTHvCuUlID3HB","8SX9rT9VSHohHgEz2qRer5oCoid2RUAS","DrRLoOybRrUUANB9fkhHU9AZ7g4NKkMs"]

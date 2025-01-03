@@ -256,8 +256,8 @@ def check_mule_account_event_processor(evt: dict):
                 result_query=f"SELECT * FROM aggregated_mule_accounts"
                 query=f"INSERT INTO {export_model_key} ({result_query})"
                 con.sql(query)
-                # df=con.sql(f"SELECT * FROM {export_model_key}").df()
-                # print(df)
+                df=con.sql(f"SELECT * FROM {export_model_key}").df()
+                print(df)
                 data_contract.connector.export_signed_output_duckdb(export_model_key,default_settings.collaboration_space_id)
                 audit_log(f"Mule_accounts exported to: {data_contract.data_descriptor_id}.")
         logger.info(f"|                                                       |")
