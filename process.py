@@ -176,7 +176,6 @@ def get_suspicous_accounts_event_processor(evt: dict):
                 result_query=f"SELECT account_uuid,account_number,account_format,bank_id,ARRAY_AGG(DISTINCT reporter_bic) AS reporter_bic,ARRAY_AGG(DISTINCT date_added) AS date_added,count(*) as report_count FROM aggregated_suspicious_accounts WHERE bank_id='{bank_id}' GROUP BY account_uuid, account_number, account_format, bank_id"
                 query=f"INSERT INTO {export_model_key} ({result_query})"
                 con.sql(query)
-                con.sql(f"SELECT * FROM {export_model_key}")
                 data_contract.connector.export_signed_output_duckdb(export_model_key,default_settings.collaboration_space_id)
                 audit_log(f"Suspicious_accounts exported to: {data_contract.data_descriptor_id}.")
         logger.info(f"|                                                       |")
@@ -223,7 +222,7 @@ def check_mule_account_event_processor(evt: dict):
             con = data_contract.connector.add_duck_db_connection(con)
             
             # Construct the query for the current data contract
-            query = f"SELECT * FROM {data_contract.connector.get_duckdb_source(model_key)} WHERE account_number='{account_number}'"
+            query = f"SELECT account_uuid,account_number,account_format,bank_id,date_added,critical_account FROM {data_contract.connector.get_duckdb_source(model_key)} WHERE account_number='{account_number}'"
             
             # Execute query and append or create table
             tables_list=[item[0] for item in con.execute("SHOW TABLES").fetchall()]
@@ -256,8 +255,6 @@ def check_mule_account_event_processor(evt: dict):
                 result_query=f"SELECT * FROM aggregated_mule_accounts"
                 query=f"INSERT INTO {export_model_key} ({result_query})"
                 con.sql(query)
-                df=con.sql(f"SELECT * FROM {export_model_key}").df()
-                print(df)
                 data_contract.connector.export_signed_output_duckdb(export_model_key,default_settings.collaboration_space_id)
                 audit_log(f"Mule_accounts exported to: {data_contract.data_descriptor_id}.")
         logger.info(f"|                                                       |")

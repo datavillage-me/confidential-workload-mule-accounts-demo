@@ -84,6 +84,15 @@ def random_bank_id(n,report_bic):
     bank_id=fake.swift()
     return bank_id
 
+def random_name(n):
+    return  ""
+
+def random_adress(n):
+    return  ""
+
+def random_social_security_number(n):
+    return  ""
+
 def date_added(n):
     fake = Faker()
     fake.seed_instance(int(n*10))
@@ -93,6 +102,9 @@ def date_added(n):
 duckdb.create_function("uuid", random_uuid, [DOUBLE], VARCHAR)
 duckdb.create_function("account_number", random_account_number, [DOUBLE], VARCHAR)
 duckdb.create_function("bank_id", random_bank_id, [DOUBLE,VARCHAR], VARCHAR)
+duckdb.create_function("name", random_name, [DOUBLE], VARCHAR)
+duckdb.create_function("adress", random_adress, [DOUBLE], VARCHAR)
+duckdb.create_function("social_security_number", random_social_security_number, [DOUBLE], VARCHAR)
 duckdb.create_function("date_added", date_added, [DOUBLE], DATE)
 
 
@@ -104,7 +116,7 @@ reporter_bic=["REPORTER_1","REPORTER_2","REPORTER_3"]
 # for x in range(numberOfDatasets):
 #     i=random.randrange(0, 3)
 #     currentLocale=locales[i]
-#     res = duckdb.sql("COPY (SELECT uuid(i) as account_uuid, account_number(i) as account_number, '"+account_format+"' as account_format, bank_id(i,'"+reporter_bic[x]+"') as bank_id, '"+reporter_bic[x]+"' as reporter_bic, date_added(i) as date_added,  FROM generate_series(1, "+str(numberOfRecords)+") s(i)) TO 'data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'  (FORMAT 'parquet')")
+#     res = duckdb.sql("COPY (SELECT uuid(i) as account_uuid, account_number(i) as account_number, '"+account_format+"' as account_format, bank_id(i,'"+reporter_bic[x]+"') as bank_id, '"+reporter_bic[x]+"' as reporter_bic,name(i+{x*numberOfRecords}) as name, adress(i+{x*numberOfRecords}) as adress, social_security_number(i+{x*numberOfRecords}) as social_security_number, date_added(i) as date_added,  FROM generate_series(1, "+str(numberOfRecords)+") s(i)) TO 'data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'  (FORMAT 'parquet')")
 
 # #get bank_id with at least 3 reported account
 # df = duckdb.sql("SELECT bank_id,count(*) as total FROM read_parquet(['data/participant_0/suspicious_accounts_clear.parquet','data/participant_1/suspicious_accounts_clear.parquet','data/participant_2/suspicious_accounts_clear.parquet']) GROUP BY bank_id HAVING total > 2").df()
@@ -124,6 +136,13 @@ reporter_bic=["REPORTER_1","REPORTER_2","REPORTER_3"]
 #     df = duckdb.sql("SELECT * FROM read_parquet(['data/participant_0/suspicious_accounts_clear.parquet','data/participant_1/suspicious_accounts_clear.parquet','data/participant_2/suspicious_accounts_clear.parquet'])  WHERE bank_id ='"+bank_bic[x]+"'").df()
 #     print (df)
 
+#create 1 doublon on purpose to break quality test on duplicate entries
+# query="SELECT * FROM read_parquet(['data/participant_0/suspicious_accounts_clear.parquet'])"
+# duckdb.sql("CREATE OR REPLACE TABLE suspicious_accounts AS "+query) 
+# duckdb.sql("DELETE FROM suspicious_accounts WHERE account_number='DE19073380389042496385'")
+# duckdb.sql("INSERT INTO suspicious_accounts VALUES ('c4bf11bf-f279-4235-8cb3-023072ce1456','DE60707429263289558603','IBAN','BYPYDEQLIZM','IZXVGB23BWP','2024-06-23')") 
+# duckdb.sql("COPY suspicious_accounts TO 'data/participant_0/suspicious_accounts_clear.parquet'  (FORMAT 'parquet')") 
+
 #generate encrypted files
 keys = ["GZs0DsMHdXr39mzkFwHwTHvCuUlID3HB","8SX9rT9VSHohHgEz2qRer5oCoid2RUAS","DrRLoOybRrUUANB9fkhHU9AZ7g4NKkMs"]
 for x in range(numberOfDatasets):
@@ -140,7 +159,9 @@ for x in range(numberOfDatasets):
     keyName="dataset"+str(x)
     res=duckdb.sql("COPY (SELECT * FROM './data/participant_"+str(x)+"/suspicious_accounts_clear.parquet') TO './data/participant_"+str(x)+"/suspicious_accounts.csv'")
 
-
+# query="SELECT COUNT(*) as row_count FROM read_parquet(['data/participant_0/suspicious_accounts_clear.parquet']) where account_number='DE60707429263289558603' GROUP BY account_number"
+# df=duckdb.sql(query).df()
+# print(df)
 #temporary - need to move into section above 
 # bank_bic=["IZXVGB23BWP","QPSBDEB1","MRWNGBXX8ZX"]
 # for x in range (numberOfDatasets):
@@ -158,3 +179,5 @@ for x in range(numberOfDatasets):
     # query="SELECT * FROM suspicious_accounts WHERE bank_id='IZXVGB23BWP'"
     # df=duckdb.sql(query).df()
     # print(df)
+
+

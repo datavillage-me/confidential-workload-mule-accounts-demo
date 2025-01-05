@@ -64,7 +64,15 @@ def random_account_number(n):
     fake = Faker(currentLocale)
     fake.seed_instance(int(n*10))
     return fake.iban()
- 
+
+def random_name(n):
+    return  ""
+
+def random_adress(n):
+    return  ""
+
+def random_social_security_number(n):
+    return  ""
 
 def date_added(n):
     fake = Faker()
@@ -76,6 +84,9 @@ def critical_account(n):
 
 
 duckdb.create_function("uuid", random_uuid, [DOUBLE], VARCHAR)
+duckdb.create_function("name", random_name, [DOUBLE], VARCHAR)
+duckdb.create_function("adress", random_adress, [DOUBLE], VARCHAR)
+duckdb.create_function("social_security_number", random_social_security_number, [DOUBLE], VARCHAR)
 duckdb.create_function("account_number", random_account_number, [DOUBLE], VARCHAR)
 duckdb.create_function("date_added", date_added, [DOUBLE], DATE)
 duckdb.create_function("critical_account", critical_account, [DOUBLE], VARCHAR)
@@ -86,14 +97,15 @@ numberOfDatasets=3
 account_format="IBAN"
 
 bank_id=["IZXVGB23BWP","QPSBDEB1","MRWNGBXX8ZX"]
-for x in range(numberOfDatasets):
-    currentLocale=locales[x]
-    print(currentLocale)
-    res = duckdb.sql(f"COPY (SELECT uuid(i+{x*numberOfRecords}) as account_uuid, account_number(i+{x*numberOfRecords}) as account_number, '{account_format}' as account_format, '{bank_id[x]}' as bank_id, date_added(i+{x*numberOfRecords}) as date_added, critical_account(i+{x*numberOfRecords}) as critical_account  FROM generate_series(1, {str(numberOfRecords)}) s(i)) TO 'data/participant_{str(x)}/mule_accounts_clear.parquet'  (FORMAT 'parquet')")
+# for x in range(numberOfDatasets):
+#     currentLocale=locales[x]
+#     print(currentLocale)
+#     res = duckdb.sql(f"COPY (SELECT uuid(i+{x*numberOfRecords}) as account_uuid, account_number(i+{x*numberOfRecords}) as account_number, '{account_format}' as account_format, '{bank_id[x]}' as bank_id, name(i+{x*numberOfRecords}) as name, adress(i+{x*numberOfRecords}) as adress, social_security_number(i+{x*numberOfRecords}) as social_security_number,date_added(i+{x*numberOfRecords}) as date_added, critical_account(i+{x*numberOfRecords}) as critical_account  FROM generate_series(1, {str(numberOfRecords)}) s(i)) TO 'data/participant_{str(x)}/mule_accounts_clear.parquet'  (FORMAT 'parquet')")
 
-#select common account in files and check if no common account files
-df = duckdb.sql("SELECT account_number,ARRAY_AGG(DISTINCT bank_id) AS bank_id,count(*) as total FROM read_parquet(['data/participant_0/mule_accounts_clear.parquet','data/participant_1/mule_accounts_clear.parquet','data/participant_2/mule_accounts_clear.parquet']) GROUP BY account_number HAVING total > 1").df()
-print(df)
+# #select common account in files and check if no common account files
+# df = duckdb.sql("SELECT account_number,ARRAY_AGG(DISTINCT bank_id) AS bank_id,count(*) as total FROM read_parquet(['data/participant_0/mule_accounts_clear.parquet','data/participant_1/mule_accounts_clear.parquet','data/participant_2/mule_accounts_clear.parquet']) GROUP BY account_number HAVING total > 1").df()
+# # print(df)
+
 
 #generate encrypted files
 keys = ["GZs0DsMHdXr39mzkFwHwTHvCuUlID3HB","8SX9rT9VSHohHgEz2qRer5oCoid2RUAS","DrRLoOybRrUUANB9fkhHU9AZ7g4NKkMs"]
