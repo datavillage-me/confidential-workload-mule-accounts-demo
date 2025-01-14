@@ -264,13 +264,13 @@ def check_mule_account_event_processor(evt: dict):
                 con.sql(data_contract.export_contract_to_sql_create_table(export_model_key))
                 
                 #add mule accounts
-                result_query=f"SELECT *,1 as report_count,'CONFIRMED' as flag  FROM aggregated_mule_accounts"
+                result_query=f"SELECT account_uuid,account_number,account_format,bank_id,date_added,critical_account,'CONFIRMED' as flag FROM aggregated_mule_accounts"
                 #add column in aggregated_mule_accounts to match export_model_key output
                 query=f"INSERT INTO {export_model_key} ({result_query})"
                 con.sql(query)
 
                 #add suspicious accounts
-                result_query=f"SELECT account_uuid,account_number,account_format,bank_id,ARRAY_AGG(DISTINCT date_added) AS date_added,count(*) as report_count,'SUSPECTED' as flag, 'unknown' as critical_account FROM aggregated_suspicious_accounts GROUP BY account_uuid, account_number, account_format, bank_id"
+                result_query=f"SELECT account_uuid,account_number,account_format,bank_id,date_added,'SUSPECTED' as flag, 'unknown' as critical_account FROM aggregated_suspicious_accounts"
       
                 #add column in aggregated_suspicious_accounts to match export_model_key output
                 query=f"INSERT INTO {export_model_key} ({result_query})"
