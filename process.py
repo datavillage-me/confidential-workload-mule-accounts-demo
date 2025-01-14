@@ -264,7 +264,7 @@ def check_mule_account_event_processor(evt: dict):
                 con.sql(data_contract.export_contract_to_sql_create_table(export_model_key))
                 
                 #add mule accounts
-                result_query=f"SELECT account_uuid,account_number,account_format,bank_id,date_added,critical_account,'CONFIRMED' as flag FROM aggregated_mule_accounts"
+                result_query=f"SELECT account_uuid,account_number,account_format,bank_id,date_added,'CONFIRMED' as flag,critical_account FROM aggregated_mule_accounts"
                 #add column in aggregated_mule_accounts to match export_model_key output
                 query=f"INSERT INTO {export_model_key} ({result_query})"
                 con.sql(query)
