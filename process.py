@@ -269,10 +269,10 @@ def check_mule_account_event_processor(evt: dict):
                 query=f"INSERT INTO {export_model_key} ({result_query})"
                 con.sql(query)
 
-                # # #add suspicious accounts
+                #add suspicious accounts
                 result_query=f"SELECT account_uuid,account_number,account_format,bank_id,ARRAY_AGG(DISTINCT date_added) AS date_added,count(*) as report_count,'SUSPECTED' as flag, 'unknown' as critical_account FROM aggregated_suspicious_accounts GROUP BY account_uuid, account_number, account_format, bank_id"
       
-                # #add column in aggregated_suspicious_accounts to match export_model_key output
+                #add column in aggregated_suspicious_accounts to match export_model_key output
                 query=f"INSERT INTO {export_model_key} ({result_query})"
                 con.sql(query)
 
