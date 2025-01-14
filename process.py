@@ -103,9 +103,52 @@ def check_data_quality_contracts_event_processor(evt: dict):
     except Exception as e:
         logger.error(e)
 
+def load_suspicious_accounts(contractManager,collaboration_space_id,con,bank_id,account_number):
+    model_key="suspicious_accounts"
+    data_contracts=contractManager.get_contracts_for_collaboration_space(collaboration_space_id)
+    #DELETE TABLE aggregated_suspicious_accounts if exist
+    con.execute("DROP TABLE IF EXISTS aggregated_suspicious_accounts")
+    for data_contract in data_contracts:
+        # Add DuckDB connection for the current data contract
+        con = data_contract.connector.add_duck_db_connection(con)
+        
+        # Construct the query for the current data contractif
+        if bank_id!=None:
+            query = f"SELECT * FROM {data_contract.connector.get_duckdb_source(model_key)} WHERE bank_id='{bank_id}'"
+        elif account_number!=None:
+            query = f"SELECT * FROM {data_contract.connector.get_duckdb_source(model_key)} WHERE account_number='{account_number}'"
+        else:
+            audit_log(f"Bank identifier or  account number empty or not valid when loading suspicious account.")
+            raise Exception("Bank identifier or  account number empty or not valid when loading suspicious account.")
+        
+        # Execute query and append or create table
+        tables_list=[item[0] for item in con.execute("SHOW TABLES").fetchall()]
+        if 'aggregated_suspicious_accounts' not in tables_list:
+            con.execute(f"CREATE TABLE aggregated_suspicious_accounts AS {query}")
+        con.execute(f"INSERT INTO aggregated_suspicious_accounts {query}")
+        audit_log(f"Read suspicious_accounts from: {data_contract.data_descriptor_id}.")
+
+def load_mule_accounts(contractManager,collaboration_space_id,con,account_number):
+    model_key="mule_accounts"
+    data_contracts=contractManager.get_contracts_for_collaboration_space(collaboration_space_id)
+    #DELETE TABLE aggregated_mule_accounts if exist
+    con.execute("DROP TABLE IF EXISTS aggregated_mule_accounts")
+    for data_contract in data_contracts:
+        # Add DuckDB connection for the current data contract
+        con = data_contract.connector.add_duck_db_connection(con)
+        
+        # Construct the query for the current data contract
+        query = f"SELECT account_uuid,account_number,account_format,bank_id,date_added,critical_account FROM {data_contract.connector.get_duckdb_source(model_key)} WHERE account_number='{account_number}'"
+        
+        # Execute query and append or create table
+        tables_list=[item[0] for item in con.execute("SHOW TABLES").fetchall()]
+        if 'aggregated_mule_accounts' not in tables_list:
+            con.execute(f"CREATE TABLE aggregated_mule_accounts AS {query}")
+        con.execute(f"INSERT INTO aggregated_mule_accounts {query}")
+        audit_log(f"Read mule_accounts from: {data_contract.data_descriptor_id}.")
+
 def get_suspicous_accounts_event_processor(evt: dict):
     try:
-        model_key="suspicious_accounts"
         logger.info(f"---------------------------------------------------------")
         logger.info(f"|                    START PROCESSING                   |")
         logger.info(f"|                                                       |")
@@ -132,25 +175,9 @@ def get_suspicous_accounts_event_processor(evt: dict):
 
         collaboration_space_id=default_settings.collaboration_space_id
         contractManager=ContractManager()
-        data_contracts=contractManager.get_contracts_for_collaboration_space(collaboration_space_id)
-
         logger.info(f"| 2. Load suspicious accounts from data sources         |")
         logger.info(f"|                                                       |")
-        #DELETE TABLE aggregated_suspicious_accounts if exist
-        con.execute("DROP TABLE IF EXISTS aggregated_suspicious_accounts")
-        for data_contract in data_contracts:
-            # Add DuckDB connection for the current data contract
-            con = data_contract.connector.add_duck_db_connection(con)
-            
-            # Construct the query for the current data contract
-            query = f"SELECT * FROM {data_contract.connector.get_duckdb_source(model_key)} WHERE bank_id='{bank_id}'"
-            
-            # Execute query and append or create table
-            tables_list=[item[0] for item in con.execute("SHOW TABLES").fetchall()]
-            if 'aggregated_suspicious_accounts' not in tables_list:
-                con.execute(f"CREATE TABLE aggregated_suspicious_accounts AS {query}")
-            con.execute(f"INSERT INTO aggregated_suspicious_accounts {query}")
-            audit_log(f"Read suspicious_accounts from: {data_contract.data_descriptor_id}.")
+        load_suspicious_accounts(contractManager,collaboration_space_id,con,bank_id,None)
         
         logger.info(f"| 3. Export suspicious accounts                         |")
         logger.info(f"|                                                       |")
@@ -184,9 +211,9 @@ def get_suspicous_accounts_event_processor(evt: dict):
     except Exception as e:
         logger.error(e)
 
+
 def check_mule_account_event_processor(evt: dict):
     try:
-        model_key="mule_accounts"
         logger.info(f"---------------------------------------------------------")
         logger.info(f"|                    START PROCESSING                   |")
         logger.info(f"|                                                       |")
@@ -209,27 +236,12 @@ def check_mule_account_event_processor(evt: dict):
 
         collaboration_space_id=default_settings.collaboration_space_id
         contractManager=ContractManager()
-        data_contracts=contractManager.get_contracts_for_collaboration_space(collaboration_space_id)
 
-        logger.info(f"| 2. Load mule accounts from data sources               |")
+        logger.info(f"| 2. Load mule & suspicious accounts from data sources  |")
         logger.info(f"|                                                       |")
-        #DELETE TABLE aggregated_mule_accounts if exist
-        con.execute("DROP TABLE IF EXISTS aggregated_mule_accounts")
-        for data_contract in data_contracts:
-            # Add DuckDB connection for the current data contract
-            con = data_contract.connector.add_duck_db_connection(con)
-            
-            # Construct the query for the current data contract
-            query = f"SELECT account_uuid,account_number,account_format,bank_id,date_added,critical_account FROM {data_contract.connector.get_duckdb_source(model_key)} WHERE account_number='{account_number}'"
-            
-            # Execute query and append or create table
-            tables_list=[item[0] for item in con.execute("SHOW TABLES").fetchall()]
-            if 'aggregated_mule_accounts' not in tables_list:
-                con.execute(f"CREATE TABLE aggregated_mule_accounts AS {query}")
-                audit_log(f"Read mule_accounts from: {data_contract.data_descriptor_id}.")
-            else:
-                con.execute(f"INSERT INTO aggregated_mule_accounts {query}")
-                audit_log(f"Read mule_accounts from: {data_contract.data_descriptor_id}.")
+        load_mule_accounts(contractManager,collaboration_space_id,con,account_number)
+        load_suspicious_accounts(contractManager,collaboration_space_id,con,None,account_number)
+        
         
         logger.info(f"| 3. Export mules accounts report                       |")
         logger.info(f"|                                                       |")
@@ -250,9 +262,20 @@ def check_mule_account_event_processor(evt: dict):
             #export only if queried bank_id is the target_client_id
             if caller_bank_id==default_settings.config("CLIENT_"+target_client_id+"_BANK_ID", default="", cast=str):
                 con.sql(data_contract.export_contract_to_sql_create_table(export_model_key))
-                result_query=f"SELECT * FROM aggregated_mule_accounts"
+                
+                #add mule accounts
+                result_query=f"SELECT *,1 as report_count,'CONFIRMED' as flag  FROM aggregated_mule_accounts"
+                #add column in aggregated_mule_accounts to match export_model_key output
                 query=f"INSERT INTO {export_model_key} ({result_query})"
                 con.sql(query)
+
+                # # #add suspicious accounts
+                result_query=f"SELECT account_uuid,account_number,account_format,bank_id,ARRAY_AGG(DISTINCT date_added) AS date_added,count(*) as report_count,'SUSPECTED' as flag, 'unknown' as critical_account FROM aggregated_suspicious_accounts GROUP BY account_uuid, account_number, account_format, bank_id"
+      
+                # #add column in aggregated_suspicious_accounts to match export_model_key output
+                query=f"INSERT INTO {export_model_key} ({result_query})"
+                con.sql(query)
+
                 data_contract.connector.export_signed_output_duckdb(export_model_key,default_settings.collaboration_space_id)
                 audit_log(f"Mule_accounts exported to: {data_contract.data_descriptor_id}.")
         logger.info(f"|                                                       |")
