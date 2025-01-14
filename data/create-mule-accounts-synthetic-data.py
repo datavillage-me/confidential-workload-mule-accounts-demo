@@ -106,7 +106,6 @@ bank_id=["IZXVGB23BWP","QPSBDEB1","MRWNGBXX8ZX"]
 # df = duckdb.sql("SELECT account_number,ARRAY_AGG(DISTINCT bank_id) AS bank_id,count(*) as total FROM read_parquet(['data/participant_0/mule_accounts_clear.parquet','data/participant_1/mule_accounts_clear.parquet','data/participant_2/mule_accounts_clear.parquet']) GROUP BY account_number HAVING total > 1").df()
 # # print(df)
 
-
 #generate encrypted files
 keys = ["GZs0DsMHdXr39mzkFwHwTHvCuUlID3HB","8SX9rT9VSHohHgEz2qRer5oCoid2RUAS","DrRLoOybRrUUANB9fkhHU9AZ7g4NKkMs"]
 for x in range(numberOfDatasets):

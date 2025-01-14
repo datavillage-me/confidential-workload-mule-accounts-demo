@@ -143,21 +143,21 @@ reporter_bic=["REPORTER_1","REPORTER_2","REPORTER_3"]
 # duckdb.sql("INSERT INTO suspicious_accounts VALUES ('c4bf11bf-f279-4235-8cb3-023072ce1456','DE60707429263289558603','IBAN','BYPYDEQLIZM','IZXVGB23BWP','2024-06-23')") 
 # duckdb.sql("COPY suspicious_accounts TO 'data/participant_0/suspicious_accounts_clear.parquet'  (FORMAT 'parquet')") 
 
-#generate encrypted files
-keys = ["GZs0DsMHdXr39mzkFwHwTHvCuUlID3HB","8SX9rT9VSHohHgEz2qRer5oCoid2RUAS","DrRLoOybRrUUANB9fkhHU9AZ7g4NKkMs"]
-for x in range(numberOfDatasets):
-    key = keys[x]
-    keyName="dataset"+str(x)
-    res=duckdb.sql("PRAGMA add_parquet_key('"+keyName+"','"+key+"')")
-    res=duckdb.sql("COPY (SELECT * FROM './data/participant_"+str(x)+"/suspicious_accounts_clear.parquet') TO './data/participant_"+str(x)+"/suspicious_accounts.parquet' (ENCRYPTION_CONFIG {footer_key: '"+keyName+"'})")
-    df = duckdb.sql("SELECT * FROM read_parquet('data/participant_"+str(x)+"/suspicious_accounts.parquet', encryption_config ={footer_key: '"+keyName+"'})").df()
-    print (df)
+# #generate encrypted files
+# keys = ["GZs0DsMHdXr39mzkFwHwTHvCuUlID3HB","8SX9rT9VSHohHgEz2qRer5oCoid2RUAS","DrRLoOybRrUUANB9fkhHU9AZ7g4NKkMs"]
+# for x in range(numberOfDatasets):
+#     key = keys[x]
+#     keyName="dataset"+str(x)
+#     res=duckdb.sql("PRAGMA add_parquet_key('"+keyName+"','"+key+"')")
+#     res=duckdb.sql("COPY (SELECT * FROM './data/participant_"+str(x)+"/suspicious_accounts_clear.parquet') TO './data/participant_"+str(x)+"/suspicious_accounts.parquet' (ENCRYPTION_CONFIG {footer_key: '"+keyName+"'})")
+#     df = duckdb.sql("SELECT * FROM read_parquet('data/participant_"+str(x)+"/suspicious_accounts.parquet', encryption_config ={footer_key: '"+keyName+"'})").df()
+#     print (df)
 
 
-#export files to CSV
-for x in range(numberOfDatasets):
-    keyName="dataset"+str(x)
-    res=duckdb.sql("COPY (SELECT * FROM './data/participant_"+str(x)+"/suspicious_accounts_clear.parquet') TO './data/participant_"+str(x)+"/suspicious_accounts.csv'")
+# #export files to CSV
+# for x in range(numberOfDatasets):
+#     keyName="dataset"+str(x)
+#     res=duckdb.sql("COPY (SELECT * FROM './data/participant_"+str(x)+"/suspicious_accounts_clear.parquet') TO './data/participant_"+str(x)+"/suspicious_accounts.csv'")
 
 # query="SELECT COUNT(*) as row_count FROM read_parquet(['data/participant_0/suspicious_accounts_clear.parquet']) where account_number='DE60707429263289558603' GROUP BY account_number"
 # df=duckdb.sql(query).df()
@@ -179,5 +179,7 @@ for x in range(numberOfDatasets):
     # query="SELECT * FROM suspicious_accounts WHERE bank_id='IZXVGB23BWP'"
     # df=duckdb.sql(query).df()
     # print(df)
+
+
 
 

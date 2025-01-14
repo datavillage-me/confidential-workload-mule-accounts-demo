@@ -149,10 +149,8 @@ def get_suspicous_accounts_event_processor(evt: dict):
             tables_list=[item[0] for item in con.execute("SHOW TABLES").fetchall()]
             if 'aggregated_suspicious_accounts' not in tables_list:
                 con.execute(f"CREATE TABLE aggregated_suspicious_accounts AS {query}")
-                audit_log(f"Read suspicious_accounts from: {data_contract.data_descriptor_id}.")
-            else:
-                con.execute(f"INSERT INTO aggregated_suspicious_accounts {query}")
-                audit_log(f"Read suspicious_accounts from: {data_contract.data_descriptor_id}.")
+            con.execute(f"INSERT INTO aggregated_suspicious_accounts {query}")
+            audit_log(f"Read suspicious_accounts from: {data_contract.data_descriptor_id}.")
         
         logger.info(f"| 3. Export suspicious accounts                         |")
         logger.info(f"|                                                       |")
