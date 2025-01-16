@@ -186,7 +186,7 @@ def get_suspicous_accounts_event_processor(evt: dict):
         #TODO need to add the client_id in a contract within a collaboration space... to be discussed with the team
         client=Client()
         participants=client.get_list_of_participants(default_settings.collaboration_space_id,None)
-        export_model_key="suspicious_accounts"
+        export_model_key="reported_suspicious_accounts"
         for data_contract in data_contracts:
             #Add connector settings to duckdb con for all data contracts and export test results linked to the right client
             con = data_contract.connector.add_duck_db_connection(con)
@@ -250,7 +250,7 @@ def check_mule_account_event_processor(evt: dict):
         client=Client()
         participants=client.get_list_of_participants(default_settings.collaboration_space_id,None)
         #TODO need to add the client_id in a contract within a collaboration space... to be discussed with the team
-        export_model_key="mule_accounts"
+        export_model_key="account_status"
         for data_contract in data_contracts:
             #Add connector settings to duckdb con for all data contracts and export test results linked to the right client
             con = data_contract.connector.add_duck_db_connection(con)
