@@ -106,6 +106,16 @@ bank_id=["IZXVGB23BWP","QPSBDEB1","MRWNGBXX8ZX"]
 # df = duckdb.sql("SELECT account_number,ARRAY_AGG(DISTINCT bank_id) AS bank_id,count(*) as total FROM read_parquet(['data/participant_0/mule_accounts_clear.parquet','data/participant_1/mule_accounts_clear.parquet','data/participant_2/mule_accounts_clear.parquet']) GROUP BY account_number HAVING total > 1").df()
 # # print(df)
 
+for x in range (numberOfDatasets):
+    query="SELECT * FROM read_parquet(['data/participant_"+str(x)+"/mule_accounts_clear.parquet'])"
+    duckdb.sql("CREATE OR REPLACE TABLE mule_accounts AS "+query) 
+    duckdb.sql("ALTER TABLE mule_accounts DROP name")
+    duckdb.sql("ALTER TABLE mule_accounts DROP adress")
+    duckdb.sql("ALTER TABLE mule_accounts DROP social_security_number")
+    duckdb.sql("COPY mule_accounts TO 'data/participant_"+str(x)+"/mule_accounts_clear.parquet'  (FORMAT 'parquet')") 
+    
+
+
 #generate encrypted files
 keys = ["GZs0DsMHdXr39mzkFwHwTHvCuUlID3HB","8SX9rT9VSHohHgEz2qRer5oCoid2RUAS","DrRLoOybRrUUANB9fkhHU9AZ7g4NKkMs"]
 for x in range(numberOfDatasets):

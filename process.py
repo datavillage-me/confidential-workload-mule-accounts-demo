@@ -23,9 +23,6 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
-keys_input_dir = "/resources/data"
-#keys_input_dir = "demo-keys"
-
 # define an event processing function
 def event_processor(evt: dict):
     """
