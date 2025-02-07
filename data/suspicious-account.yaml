@@ -59,3 +59,12 @@ suspicious_accounts:
       description: "The date when the account was added to the system."
       required: "true"
       classification: "restricted"
+    flag: 
+      type: "varchar"
+      description: "The status of the account."
+      required: "true"
+      classification: "confidential"
+      enum: 
+      - "SUSPECTED"
+      - "CLEARED"
+      - "REMOVED"

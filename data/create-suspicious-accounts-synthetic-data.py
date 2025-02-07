@@ -143,13 +143,11 @@ reporter_bic=["REPORTER_1","REPORTER_2","REPORTER_3"]
 # duckdb.sql("INSERT INTO suspicious_accounts VALUES ('c4bf11bf-f279-4235-8cb3-023072ce1456','DE60707429263289558603','IBAN','BYPYDEQLIZM','IZXVGB23BWP','2024-06-23')") 
 # duckdb.sql("COPY suspicious_accounts TO 'data/participant_0/suspicious_accounts_clear.parquet'  (FORMAT 'parquet')") 
 
-for x in range (numberOfDatasets):
-    query="SELECT * FROM read_parquet(['data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'])"
-    duckdb.sql("CREATE OR REPLACE TABLE suspicious_accounts AS "+query) 
-    duckdb.sql("ALTER TABLE suspicious_accounts DROP name")
-    duckdb.sql("ALTER TABLE suspicious_accounts DROP adress")
-    duckdb.sql("ALTER TABLE suspicious_accounts DROP social_security_number")
-    duckdb.sql("COPY suspicious_accounts TO 'data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'  (FORMAT 'parquet')") 
+# for x in range (numberOfDatasets):
+#     query="SELECT * FROM read_parquet(['data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'])"
+#     duckdb.sql("CREATE OR REPLACE TABLE suspicious_accounts AS "+query) 
+#     duckdb.sql("ALTER TABLE suspicious_accounts ADD COLUMN flag VARCHAR DEFAULT 'SUSPECTED'")
+#     duckdb.sql("COPY suspicious_accounts TO 'data/participant_"+str(x)+"/suspicious_accounts_clear.parquet'  (FORMAT 'parquet')") 
     
 
 #generate encrypted files
