@@ -43,6 +43,10 @@ def event_processor(evt: dict):
         # use the GET_SUSPICIOUS_ACCOUNTS event processor dedicated function
         logger.info(f"Use the get suspicious accounts event processor")
         get_suspicous_accounts_event_processor(evt)
+    elif evt_type == "NOTIFY_SUSPICIOUS_ACCOUNTS":
+        # use the NOTIFY_SUSPICIOUS_ACCOUNTS event processor dedicated function
+        logger.info(f"Use the notify suspicious accounts event processor")
+        notify_suspicous_accounts_event_processor(evt)
     elif evt_type == "CHECK_MULE_ACCOUNT":
         # use the CHECK_MULE_ACCOUNT event processor dedicated function
         logger.info(f"Use the check mule account event processor")
@@ -149,18 +153,10 @@ def load_mule_accounts(contractManager,collaboration_space_id,con,account_number
         con.execute(f"INSERT INTO aggregated_mule_accounts {query}")
         audit_log(f"Read mule_accounts from: {data_contract.data_descriptor_id}.")
 
-def get_suspicous_accounts_event_processor(evt: dict):
+def export_suspicious_accounts(bank_id:str):
     try:
-        logger.info(f"---------------------------------------------------------")
-        logger.info(f"|                    START PROCESSING                   |")
-        logger.info(f"|                                                       |")
-        start_time = time.time()
-        logger.info(f"|    Start time:  {start_time} secs               |")
-        logger.info(f"|                                                       |")
-        audit_log(f"Start processing event: {evt.get('type', '')}.")
 
         #load parameters
-        bank_id= evt.get("bank_id", "")
         allowed_bank_ids=default_settings.config("ALLOWED_BANK_IDS", default="", cast=str)
         allowed_bank_ids_list=None
         if allowed_bank_ids!=None:
@@ -205,6 +201,82 @@ def get_suspicous_accounts_event_processor(evt: dict):
                 con.sql(query)
                 data_contract.connector.export_signed_output_duckdb(export_model_key,default_settings.collaboration_space_id)
                 audit_log(f"Suspicious_accounts exported to: {data_contract.data_descriptor_id}.")
+    except Exception as e:
+        logger.error(e)
+
+
+def get_suspicous_accounts_event_processor(evt: dict):
+    logger.info(f"---------------------------------------------------------")
+    logger.info(f"|                    START PROCESSING                   |")
+    logger.info(f"|                                                       |")
+    start_time = time.time()
+    logger.info(f"|    Start time:  {start_time} secs               |")
+    logger.info(f"|                                                       |")
+    audit_log(f"Start processing event: {evt.get('type', '')}.")
+
+    #load parameters
+    bank_id= evt.get("bank_id", "")
+    export_suspicious_accounts(bank_id)
+
+    logger.info(f"|                                                       |")
+    execution_time=(time.time() - start_time)
+    logger.info(f"|    Execution time:  {execution_time} secs           |")
+    logger.info(f"|                                                       |")
+    logger.info(f"--------------------------------------------------------")
+    
+
+def notify_suspicous_accounts_event_processor(evt: dict):
+    try:
+        logger.info(f"---------------------------------------------------------")
+        logger.info(f"|                    START PROCESSING                   |")
+        logger.info(f"|                                                       |")
+        start_time = time.time()
+        logger.info(f"|    Start time:  {start_time} secs               |")
+        logger.info(f"|                                                       |")
+        audit_log(f"Start processing event: {evt.get('type', '')}.")
+        
+        #load parameters
+        model_key="suspicious_accounts"
+        caller_bank_id=evt.get("caller_bank_id", "")
+        allowed_bank_ids=default_settings.config("ALLOWED_BANK_IDS", default="", cast=str)
+        allowed_bank_ids_list=None
+        if allowed_bank_ids!=None:
+            allowed_bank_ids_list=allowed_bank_ids.split(",")
+        if caller_bank_id==None or not(caller_bank_id in allowed_bank_ids_list):
+            audit_log(f"Bank identifier empty or not valid.")
+            raise Exception("Bank identifier empty or not valid")
+
+        logger.info(f"| 1. Get data contracts                                 |")
+        logger.info(f"|                                                       |")
+        #Connect in memory duckdb (encrypted memory on confidential computing)
+        con = duckdb.connect(database=":memory:")
+        collaboration_space_id=default_settings.collaboration_space_id
+        contractManager=ContractManager()
+        data_contracts=contractManager.get_contracts_for_collaboration_space(collaboration_space_id)
+
+        logger.info(f"| 2. Notify holder bank if new suspicious account       |")
+        logger.info(f"|                                                       |")
+        client=Client()
+        participants=client.get_list_of_participants(default_settings.collaboration_space_id,None)
+        for data_contract in data_contracts:
+            #Add connector settings to duckdb con for all notifyer data contracts 
+            con = data_contract.connector.add_duck_db_connection(con)
+            target_id=data_contract.data_descriptor_id
+            target_client_id = next(
+                (item["clientId"] for item in participants if "dataDescriptors" in item and any(dd["id"] == target_id for dd in item["dataDescriptors"])),
+                None
+            )
+            #query only if caller_bank_id is the target_client_id
+            if caller_bank_id==default_settings.config("CLIENT_"+target_client_id+"_BANK_ID", default="", cast=str):
+                #query only recent added account (less than 1 day) and SUSPECTED accounts
+                query = f"SELECT count(*) as total,bank_id FROM {data_contract.connector.get_duckdb_source(model_key)} WHERE flag='SUSPECTED' AND date_diff('day',date_added, current_date)<=1 GROUP BY bank_id"
+                #if there is at least one new item, regenerate the list for the data consumer with bank_id 
+                df=con.sql(query).df()
+                print(df)
+                for row in df.itertuples(index=False):
+                    logger.info(f"| Notify bank_id {row.bank_id}                          |")
+                    logger.info(f"|                                                       |")
+                    export_suspicious_accounts(row.bank_id)
         logger.info(f"|                                                       |")
         execution_time=(time.time() - start_time)
         logger.info(f"|    Execution time:  {execution_time} secs           |")
@@ -212,7 +284,6 @@ def get_suspicous_accounts_event_processor(evt: dict):
         logger.info(f"--------------------------------------------------------")
     except Exception as e:
         logger.error(e)
-
 
 def check_mule_account_event_processor(evt: dict):
     try:
@@ -272,7 +343,7 @@ def check_mule_account_event_processor(evt: dict):
                 con.sql(query)
 
                 #add suspicious accounts
-                result_query=f"SELECT account_uuid,account_number,account_format,bank_id,date_added,'SUSPECTED' as flag, 'unknown' as critical_account FROM aggregated_suspicious_accounts"
+                result_query=f"SELECT account_uuid,account_number,account_format,bank_id,date_added,flag, 'unknown' as critical_account FROM aggregated_suspicious_accounts where flag='SUSPECTED'"
       
                 #add column in aggregated_suspicious_accounts to match export_model_key output
                 query=f"INSERT INTO {export_model_key} ({result_query})"

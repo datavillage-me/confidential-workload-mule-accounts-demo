@@ -24,13 +24,23 @@ class Test(unittest.TestCase):
     #     }
     #     process.event_processor(test_event)
     
-    def test_get_suspicious_accounts(self):
+    # def test_get_suspicious_accounts(self):
+    #     """
+    #     Try the process to get suspicious account
+    #     """
+    #     test_event = {
+    #     "type": "GET_SUSPICIOUS_ACCOUNTS",
+    #     "bank_id": "IZXVGB23BWP"
+    #     }
+    #     process.event_processor(test_event)
+
+    def test_notify_new_suspicious_accounts(self):
         """
-        Try the process to get suspicious account
+        Try the process to notify suspicious account
         """
         test_event = {
-        "type": "GET_SUSPICIOUS_ACCOUNTS",
-        "bank_id": "IZXVGB23BWP"
+        "type": "NOTIFY_SUSPICIOUS_ACCOUNTS",
+        "caller_bank_id": "IZXVGB23BWP"
         }
         process.event_processor(test_event)
     
